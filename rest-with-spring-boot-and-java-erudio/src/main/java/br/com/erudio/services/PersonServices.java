@@ -3,6 +3,7 @@ package br.com.erudio.services;
 import br.com.erudio.controllers.PersonController;
 import br.com.erudio.data.dto.v1.PersonDTO;
 import br.com.erudio.data.dto.v2.PersonDTOV2;
+import br.com.erudio.exception.RequiredObjectIsNullException;
 import br.com.erudio.exception.ResourceNotFoundException;
 import static br.com.erudio.mapper.ObjectMapper.parseListObjects;
 import static br.com.erudio.mapper.ObjectMapper.parseObject;
@@ -33,15 +34,11 @@ public class PersonServices {
 
 
     private void addHateoasLinks(PersonDTO dto) {
-        dto.add(linkTo(methodOn(PersonController.class).findAll()).withRel("findAll").withTitle("GET"));
-
-        dto.add(linkTo(methodOn(PersonController.class).findbyId(dto.getId())).withSelfRel().withTitle("GET"));
-
-        dto.add(linkTo(methodOn(PersonController.class).update(dto)).withRel("update").withTitle("PUT"));
-
-        dto.add(linkTo(methodOn(PersonController.class).create(dto)).withRel("create").withTitle("POST"));
-
-        dto.add(linkTo(methodOn(PersonController.class).delete(dto.getId())).withRel("delete").withTitle("DELETE"));
+        dto.add(linkTo(methodOn(PersonController.class).findById(dto.getId())).withSelfRel().withType("GET"));
+        dto.add(linkTo(methodOn(PersonController.class).findAll()).withRel("findAll").withType("GET"));
+        dto.add(linkTo(methodOn(PersonController.class).create(dto)).withRel("create").withType("POST"));
+        dto.add(linkTo(methodOn(PersonController.class).update(dto)).withRel("update").withType("PUT"));
+        dto.add(linkTo(methodOn(PersonController.class).delete(dto.getId())).withRel("delete").withType("DELETE"));
     }
 
     public List<PersonDTO> findAll(){
@@ -66,6 +63,9 @@ public class PersonServices {
     }
 
     public PersonDTO create (PersonDTO person) {
+
+        if (person == null) throw new RequiredObjectIsNullException();
+
         logger.info("Creating one person!");
 
         var entity = parseObject(person, Person.class);
@@ -75,13 +75,13 @@ public class PersonServices {
 
         return dto;
     }
-    public PersonDTOV2 createV2 (PersonDTOV2 person) {
-        logger.info("Creating one person!");
-
-        var entity = converter.convertDTOToEntity(person);
-
-        return converter.convertEntityToDTO(repository.save(entity));
-    }
+//    public PersonDTOV2 createV2 (PersonDTOV2 person) {
+//        logger.info("Creating one person!");
+//
+//        var entity = converter.convertDTOToEntity(person);
+//
+//        return converter.convertEntityToDTO(repository.save(entity));
+//    }
 
     public PersonDTO update (PersonDTO person) {
         logger.info("Updating one person!");
@@ -107,16 +107,5 @@ public class PersonServices {
                 .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID"));
 
         repository.delete(entity);
-    }
-
-    private PersonDTO mockPerson(int i) {
-        PersonDTO person = new PersonDTO();
-        person.setId(counter.incrementAndGet());
-        person.setFirstName("Firstname " + i);
-        person.setLastName("Lastname " + i);
-        person.setAddress("Some address in Brazil");
-        person.setGender("Male");
-
-        return person;
     }
 }
